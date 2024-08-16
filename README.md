@@ -66,6 +66,7 @@ These parameters are used to tune and control the behaviour of
 || `rotate_to_heading_min_angle`      | Minimum angle to trigger rotate-to-heading behavior.             |
 || `max_angular_accel`                | Maximum angular acceleration.                                    |
 | Optional Reversing | `allow_reversing`                | Will move in reverse if the lookahead point is behind the robot. |
+| Controller Reset | `reset_period` | Required time of inactivity to reset internal last velocity buffer. |
 
 ## Default Parameters
 ```yaml

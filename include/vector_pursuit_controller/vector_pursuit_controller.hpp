@@ -307,6 +307,7 @@ protected:
   nav2_costmap_2d::Costmap2D * costmap_;
   rclcpp::Logger logger_ {rclcpp::get_logger("VectorPursuitController")};
   rclcpp::Clock::SharedPtr clock_;
+  rclcpp::Time last_time_called_;
 
   double k_;
   double desired_linear_vel_, base_desired_linear_vel_;
@@ -339,6 +340,7 @@ protected:
   bool allow_reversing_;
   bool is_reversing_;
   bool use_heading_from_path_;
+  double reset_period_;
 
   geometry_msgs::msg::Twist last_cmd_vel_;
 

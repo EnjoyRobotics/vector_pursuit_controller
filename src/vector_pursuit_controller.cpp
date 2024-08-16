@@ -51,6 +51,7 @@ void VectorPursuitController::configure(
   plugin_name_ = name;
   logger_ = node->get_logger();
   clock_ = node->get_clock();
+  last_time_called_ = clock_->now();
 
   double transform_tolerance = 0.1;
   double control_frequency = 20.0;
@@ -122,6 +123,9 @@ void VectorPursuitController::configure(
   declare_parameter_if_not_declared(
     node, plugin_name_ + ".use_heading_from_path",
     rclcpp::ParameterValue(true));
+  declare_parameter_if_not_declared(
+    node, plugin_name_ + ".reset_period", rclcpp::ParameterValue(0.3));
+
 
   node->get_parameter(plugin_name_ + ".k", k_);
   node->get_parameter(plugin_name_ + ".desired_linear_vel", desired_linear_vel_);
@@ -177,6 +181,7 @@ void VectorPursuitController::configure(
   node->get_parameter(
     plugin_name_ + ".use_heading_from_path",
     use_heading_from_path_);
+  node->get_parameter(plugin_name_ + ".reset_period", reset_period_);
 
   transform_tolerance_ = tf2::durationFromSec(transform_tolerance);
   control_duration_ = 1.0 / control_frequency;
@@ -307,6 +312,12 @@ geometry_msgs::msg::TwistStamped VectorPursuitController::computeVelocityCommand
   const geometry_msgs::msg::Twist & speed,
   nav2_core::GoalChecker * goal_checker)
 {
+  if (clock_->now() - last_time_called_ > rclcpp::Duration::from_seconds(reset_period_)) {
+    last_cmd_vel_.linear.x = 0.0;
+    last_cmd_vel_.angular.z = 0.0;
+  }
+  last_time_called_ = clock_->now();
+
   std::lock_guard<std::mutex> lock_reinit(mutex_);
   nav2_costmap_2d::Costmap2D * costmap = costmap_ros_->getCostmap();
   std::unique_lock<nav2_costmap_2d::Costmap2D::mutex_t> lock(*(costmap->getMutex()));
@@ -1003,6 +1014,8 @@ rcl_interfaces::msg::SetParametersResult VectorPursuitController::dynamicParamet
         max_lateral_accel_ = parameter.as_double();
       } else if (name == plugin_name_ + ".max_linear_accel") {
         max_linear_accel_ = parameter.as_double();
+      } else if (name == plugin_name_ + ".reset_period") {
+        reset_period_ = parameter.as_double();
       }
     } else if (type == ParameterType::PARAMETER_BOOL) {
       if (name == plugin_name_ + ".use_velocity_scaled_lookahead_dist") {
