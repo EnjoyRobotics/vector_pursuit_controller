@@ -24,7 +24,7 @@
 
 #include "vector_pursuit_controller/vector_pursuit_controller.hpp"
 #include "angles/angles.h"
-#include "nav2_core/exceptions.hpp"
+#include "nav2_core/planner_exceptions.hpp"
 #include "nav2_util/node_utils.hpp"
 #include "nav2_costmap_2d/costmap_filters/filter_values.hpp"
 
