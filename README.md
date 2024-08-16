@@ -64,6 +64,7 @@ These parameters are used to tune and control the behaviour of
 | On Point Rotation | `use_rotate_to_heading` | Enable/disable rotate-to-heading behavior. Will override reversing if both are enabled. |
 || `rotate_to_heading_angular_vel`    | Angular velocity for rotating to heading.                        |
 || `rotate_to_heading_min_angle`      | Minimum angle to trigger rotate-to-heading behavior.             |
+||`rotate_to_path_release_angle` | Angle value where the path following behavior should overtake the initial rotate to path |
 || `max_angular_accel`                | Maximum angular acceleration.                                    |
 | Optional Reversing | `allow_reversing`                | Will move in reverse if the lookahead point is behind the robot. |
 | Controller Reset | `reset_period` | Required time of inactivity to reset internal last velocity buffer. |

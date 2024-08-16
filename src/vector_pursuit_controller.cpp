@@ -125,6 +125,8 @@ void VectorPursuitController::configure(
     rclcpp::ParameterValue(true));
   declare_parameter_if_not_declared(
     node, plugin_name_ + ".reset_period", rclcpp::ParameterValue(0.3));
+  declare_parameter_if_not_declared(
+    node, plugin_name_ + ".rotate_to_path_release_angle", rclcpp::ParameterValue(0.1));
 
 
   node->get_parameter(plugin_name_ + ".k", k_);
@@ -182,6 +184,9 @@ void VectorPursuitController::configure(
     plugin_name_ + ".use_heading_from_path",
     use_heading_from_path_);
   node->get_parameter(plugin_name_ + ".reset_period", reset_period_);
+  node->get_parameter(
+    plugin_name_ + ".rotate_to_path_release_angle",
+    rotate_to_path_release_angle_);
 
   transform_tolerance_ = tf2::durationFromSec(transform_tolerance);
   control_duration_ = 1.0 / control_frequency;
@@ -362,11 +367,14 @@ geometry_msgs::msg::TwistStamped VectorPursuitController::computeVelocityCommand
 
   double angle_to_heading;
   if (shouldRotateToGoalHeading(lookahead_point)) {
+    rotation_state_ = RotationState::ROTATE_TO_GOAL;
     double angle_to_goal = tf2::getYaw(transformed_plan.poses.back().pose.orientation);
     rotateToHeading(linear_vel, angular_vel, angle_to_goal, last_cmd_vel_);
   } else if (shouldRotateToPath(lookahead_point, angle_to_heading, sign)) {
+    rotation_state_ = RotationState::ROTATE_TO_PATH;
     rotateToHeading(linear_vel, angular_vel, angle_to_heading, last_cmd_vel_);
   } else {
+    rotation_state_ = RotationState::FOLLOW_PATH;
     double turning_radius = calcTurningRadius(lookahead_point);
 
     // Compute linear velocity based on path curvature
@@ -508,6 +516,11 @@ bool VectorPursuitController::shouldRotateToPath(
   // In case we are reversing
   if (sign < 0.0) {
     angle_to_path = angles::normalize_angle(angle_to_path + M_PI);
+  }
+
+  if (rotation_state_ == RotationState::ROTATE_TO_PATH) {
+    return use_rotate_to_heading_ &&
+           std::abs(angle_to_path) > rotate_to_path_release_angle_;
   }
 
   return use_rotate_to_heading_ && std::abs(angle_to_path) > rotate_to_heading_min_angle_;
@@ -679,6 +692,15 @@ void VectorPursuitController::rotateToHeading(
   angular_vel = sign * rotate_to_heading_angular_vel_;
 
   const double & dt = control_duration_;
+
+  double decel_angle_treshold =
+    std::pow(curr_speed.angular.z, 2) / (2.0 * max_angular_accel_) +
+    rotate_to_path_release_angle_ * 0.8;
+
+  if (std::abs(angle_to_path) < decel_angle_treshold) {
+    angular_vel = curr_speed.angular.z - (sign * max_angular_accel_ * dt);
+  }
+
   const double min_feasible_angular_speed = curr_speed.angular.z - max_angular_accel_ * dt;
   const double max_feasible_angular_speed = curr_speed.angular.z + max_angular_accel_ * dt;
   angular_vel = std::clamp(angular_vel, min_feasible_angular_speed, max_feasible_angular_speed);
@@ -1016,6 +1038,8 @@ rcl_interfaces::msg::SetParametersResult VectorPursuitController::dynamicParamet
         max_linear_accel_ = parameter.as_double();
       } else if (name == plugin_name_ + ".reset_period") {
         reset_period_ = parameter.as_double();
+      } else if (name == plugin_name_ + ".rotate_to_path_release_angle") {
+        rotate_to_path_release_angle_ = parameter.as_double();
       }
     } else if (type == ParameterType::PARAMETER_BOOL) {
       if (name == plugin_name_ + ".use_velocity_scaled_lookahead_dist") {

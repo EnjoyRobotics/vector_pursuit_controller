@@ -341,6 +341,9 @@ protected:
   bool is_reversing_;
   bool use_heading_from_path_;
   double reset_period_;
+  double rotate_to_path_release_angle_;
+
+  enum class RotationState {ROTATE_TO_PATH, FOLLOW_PATH, ROTATE_TO_GOAL} rotation_state_;
 
   geometry_msgs::msg::Twist last_cmd_vel_;
 
