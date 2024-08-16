@@ -428,7 +428,7 @@ double VectorPursuitController::approachVelocityScalingFactor(
   if (remaining_distance < approach_velocity_scaling_dist_) {
     auto & last = transformed_path.poses.back();
     double distance_to_last_pose = std::hypot(last.pose.position.x, last.pose.position.y);
-    return distance_to_last_pose / approach_velocity_scaling_dist_;
+    return std::pow(distance_to_last_pose / approach_velocity_scaling_dist_, 2);
   } else {
     return 1.0;
   }
