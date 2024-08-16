@@ -520,10 +520,12 @@ bool VectorPursuitController::shouldRotateToPath(
 
   if (rotation_state_ == RotationState::ROTATE_TO_PATH) {
     return use_rotate_to_heading_ &&
-           std::abs(angle_to_path) > rotate_to_path_release_angle_;
+           std::abs(angle_to_path) > rotate_to_path_release_angle_ &&
+           std::abs(last_cmd_vel_.linear.x) < 0.05;
   }
 
-  return use_rotate_to_heading_ && std::abs(angle_to_path) > rotate_to_heading_min_angle_;
+  return use_rotate_to_heading_ && std::abs(angle_to_path) > rotate_to_heading_min_angle_ &&
+         std::abs(last_cmd_vel_.linear.x) < 0.05;
 }
 
 bool VectorPursuitController::shouldRotateToGoalHeading(
